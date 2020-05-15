@@ -1,0 +1,16 @@
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "spec/**/*"
+
+Lint/AmbiguousBlockAssociation:
+  Exclude:
+    - "spec/**/*"
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+
+Style/EvalWithLocation:
+  Exclude:
+    - "spec/**/*"

@@ -1,0 +1,16 @@
+---
+dist: xenial
+language: ruby
+cache: bundler
+rvm:
+  - 2.5.8
+  - 2.6.6
+  - 2.7.1
+env:
+  - BUNNY_VERSION="~> 2.15"
+  - BUNNY_VERSION="2.10.0"
+
+before_install: gem install bundler
+before_script:
+  - ".ci/install_rabbitmq"
+bundler_args: --jobs 3 --retry 3
