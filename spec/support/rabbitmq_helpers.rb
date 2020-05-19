@@ -73,6 +73,18 @@ module RabbitmqHelpers
 end
 
 RSpec.configure do |config|
-  config.include RabbitmqHelpers, :rabbitmq
+  config.include RabbitmqHelpers, :rabbitmq, :rpc
   config.before(:each, :rabbitmq) { rabbitmq.reset_vhost }
+
+  config.before(:each, :rpc) { rabbitmq.reset_vhost }
+  config.around(:each, :rpc) do |example|
+    script = File.expand_path('../scripts/rpc_server.rb', __dir__)
+    queue = example.metadata.fetch(:rpc)
+
+    pid = Process.spawn(['ruby', script, queue].join(' '))
+
+    example.run
+  ensure
+    Process.kill('TERM', pid)
+  end
 end
