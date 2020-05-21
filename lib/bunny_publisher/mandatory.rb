@@ -91,7 +91,7 @@ module BunnyPublisher
     end
 
     def on_message_return(return_info, properties, message)
-      @unrouted_message = true
+      @unrouted_message_processing = true
 
       ensure_message_is_unrouted!(return_info, properties, message)
 
@@ -103,8 +103,9 @@ module BunnyPublisher
       end
       run_callback(:after_republish, return_info, properties, message)
 
-      @unrouted_message = false
       result
+    ensure
+      @unrouted_message_processing = false
     end
 
     def setup_queue_for_republish(return_info, properties, message)
@@ -130,13 +131,13 @@ module BunnyPublisher
     def wait_for_unrouted_messages_processing(timeout:)
       sleep(0.05) # gives exchange some time to receive retuned message
 
-      return unless @unrouted_message
+      return unless @unrouted_message_processing
 
       puts("Waiting up to #{timeout} seconds for unrouted messages handling")
 
-      Timeout.timeout(timeout) { sleep 0.01 while @unrouted_message }
+      Timeout.timeout(timeout) { sleep 0.01 while @unrouted_message_processing }
     rescue Timeout::Error
-      puts('Some unrouted messages are lost on process exit!')
+      warn('Some unrouted messages are lost on process exit!')
     end
   end
 end
