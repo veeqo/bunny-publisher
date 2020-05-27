@@ -1,4 +1,4 @@
-## Changes Between 0.1.1 and 0.1.2 (unreleased)
+## Changes Between 0.1.1 and 0.1.2
 
 Added [test mode](https://github.com/veeqo/bunny-publisher#test-mode)
 
