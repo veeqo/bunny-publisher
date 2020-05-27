@@ -111,6 +111,32 @@ end
 
 Not implemented yet
 
+## Test mode
+
+BunnyPublisher also has a test mode which replaces exchange and prevents real connection to RabbitMQ
+
+```ruby
+BunnyPublisher.configure do |c|
+  c.test = true # or Rails.env.test?
+
+  # ...
+end
+```
+
+Now publisher has `#messages`, `#flush!` methods:
+
+```ruby
+describe SomeServiceThatPublishesToRabbitMQ, '#call' do
+  subject { described_class.new(some: 'attributes').call }
+
+  before { BunnyPublisher.flush! }
+
+  it 'publishes a message' do
+    expect { subject }.to change(BunnyPublisher.messages).by(1)
+  end
+end
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/veeqo/bunny-publisher.
