@@ -13,6 +13,6 @@ describe BunnyPublisher::Test, '#flush!' do
   before { publisher.publish 'message', with: 'options' }
 
   it 'flushes #messages' do
-    expect { flush! }.to change(publisher, :messages).from([['message', with: 'options']]).to([])
+    expect { flush! }.to change(publisher, :messages).from([['message', { with: 'options' }]]).to([])
   end
 end
