@@ -25,6 +25,8 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ['lib']
 
+  spec.required_ruby_version = '>= 2.5'
+
   spec.add_dependency 'bunny', '~> 2.10'
 
   spec.add_development_dependency 'appraisal', '~> 2.3.0'

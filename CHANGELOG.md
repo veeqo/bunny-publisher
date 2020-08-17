@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.2...HEAD)
 
+### Changed
 - [#2](https://github.com/veeqo/bunny-publisher/pull/2) Use appraisal gem to control gem versions of tests matrix
+- [#3](https://github.com/veeqo/bunny-publisher/pull/3) Require ruby 2.5
 
 
 ## [0.1.2](https://github.com/veeqo/bunny-publisher/compare/v0.1.1...v0.1.2) - 2020-07-30
