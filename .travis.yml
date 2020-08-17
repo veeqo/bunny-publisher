@@ -6,9 +6,9 @@ rvm:
   - 2.5.8
   - 2.6.6
   - 2.7.1
-env:
-  - BUNNY_VERSION="~> 2.15"
-  - BUNNY_VERSION="2.10.0"
+gemfile:
+  - gemfiles/bunny_2.10.x.gemfile
+  - gemfiles/bunny_2.x.gemfile
 
 before_install: gem install bundler
 before_script:
