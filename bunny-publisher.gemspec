@@ -27,9 +27,9 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'bunny', '~> 2.10'
 
-  spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'appraisal', '~> 2.3.0'
+  spec.add_development_dependency 'bundler', '>= 2.0'
   spec.add_development_dependency 'pry-byebug'
   spec.add_development_dependency 'rabbitmq_http_api_client', '~> 1.13'
-  spec.add_development_dependency 'rake'
-  spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'rspec', '~> 3.0'
 end

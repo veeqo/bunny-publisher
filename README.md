@@ -137,6 +137,26 @@ describe SomeServiceThatPublishesToRabbitMQ, '#call' do
 end
 ```
 
+## Testing
+
+Run rabbitmq server (in separate console):
+```
+docker run --rm -p 5672:5672 -p 15672:15672 rabbitmq:3.8-management-alpine
+```
+
+Run tests with:
+
+```sh
+bundle
+rake
+```
+
+Use [wwtd](https://github.com/grosser/wwtd) to run test matrix:
+```sh
+gem install wwtd
+wwtd
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/veeqo/bunny-publisher.
