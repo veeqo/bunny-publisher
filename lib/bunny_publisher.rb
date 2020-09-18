@@ -30,7 +30,7 @@ module BunnyPublisher
         include ::BunnyPublisher::Test      if config.delete_field(:test)
       end
 
-      @publisher = klass.new(config.to_h)
+      @publisher = klass.new(**config.to_h)
     end
 
     def method_missing(method_name, *args)
