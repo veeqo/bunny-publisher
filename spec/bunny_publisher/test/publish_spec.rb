@@ -55,7 +55,7 @@ describe BunnyPublisher::Test, '#publish' do
         attr_reader :callbacks_data
 
         def initialize(options = {})
-          super
+          super(**options)
           @callbacks_data = []
         end
 

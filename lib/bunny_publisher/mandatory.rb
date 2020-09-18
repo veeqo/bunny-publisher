@@ -16,7 +16,7 @@ module BunnyPublisher
     attr_reader :queue_name, :queue_options
 
     def initialize(republish_connection: nil, queue: nil, queue_options: {}, timeout_at_exit: 5, **options)
-      super(options)
+      super(**options)
 
       @queue_name = queue
       @queue_options = queue_options
