@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.2...HEAD)
+## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.3...HEAD)
+
+## [0.1.3](https://github.com/veeqo/bunny-publisher/compare/v0.1.2...v0.1.3) - 2020-09-18
 
 ### Changed
 - [#2](https://github.com/veeqo/bunny-publisher/pull/2) Use appraisal gem to control gem versions of tests matrix
