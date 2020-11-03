@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - [#5](https://github.com/veeqo/bunny-publisher/pull/5) Test against ruby 2.7.2
 
+### Fixed
+- [#6](https://github.com/veeqo/bunny-publisher/pull/6) Do not share channels between threads
+
+
 ## [0.1.3](https://github.com/veeqo/bunny-publisher/compare/v0.1.2...v0.1.3) - 2020-09-18
 
 ### Changed
