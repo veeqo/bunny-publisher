@@ -5,7 +5,7 @@ cache: bundler
 rvm:
   - 2.5.8
   - 2.6.6
-  - 2.7.1
+  - 2.7.2
 gemfile:
   - gemfiles/bunny_2.10.x.gemfile
   - gemfiles/bunny_2.x.gemfile
