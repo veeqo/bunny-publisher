@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.3...HEAD)
 
+### Changed
+- [#5](https://github.com/veeqo/bunny-publisher/pull/5) Test against ruby 2.7.2
+
 ## [0.1.3](https://github.com/veeqo/bunny-publisher/compare/v0.1.2...v0.1.3) - 2020-09-18
 
 ### Changed
