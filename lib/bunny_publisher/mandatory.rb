@@ -49,7 +49,7 @@ module BunnyPublisher
 
     private
 
-    attr_reader :republish_connection, :republish_channel, :republish_exchange
+    attr_reader :republish_connection
 
     def connect!
       super
@@ -75,19 +75,31 @@ module BunnyPublisher
     def connect_for_republish!
       @republish_connection ||= build_republish_connection
       republish_connection.start
-      @republish_channel = republish_connection.create_channel
-      @republish_exchange = clone_exchange_for_republish
+
+      republish_connection_variables[:republish_channel] ||= republish_connection.create_channel
+      republish_connection_variables[:republish_exchange] ||= build_republish_exchange
+    end
+
+    def republish_connection_variables
+      thread_variables[republish_connection] ||= {}
+    end
+
+    def republish_channel
+      republish_connection_variables[:republish_channel]
+    end
+
+    def republish_exchange
+      republish_connection_variables[:republish_exchange]
     end
 
     def build_republish_connection
       Bunny.new(connection.instance_variable_get(:'@opts')) # TODO: find more elegant way to "clone" connection
     end
 
-    def clone_exchange_for_republish
-      republish_channel.default_exchange if exchange.name == ''
+    def build_republish_exchange
+      return republish_channel.default_exchange if @exchange_name.nil? || @exchange_name == ''
 
-      republish_channel.exchange exchange.name,
-                                 exchange.instance_variable_get(:'@options').merge(type: exchange.type)
+      republish_channel.exchange(@exchange_name, @exchange_options)
     end
 
     def on_message_return(return_info, properties, message)
