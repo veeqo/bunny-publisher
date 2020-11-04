@@ -49,7 +49,7 @@ module BunnyPublisher
 
     private
 
-    attr_reader :republish_connection
+    attr_reader :republish_connection, :republish_channel, :republish_exchange
 
     def connect!
       super
@@ -65,7 +65,7 @@ module BunnyPublisher
     end
 
     def ensure_republish_connection!
-      @republish_mutex.synchronize { connect_for_republish! unless connected_for_republish? }
+      connect_for_republish! unless connected_for_republish?
     end
 
     def connected_for_republish?
@@ -75,31 +75,19 @@ module BunnyPublisher
     def connect_for_republish!
       @republish_connection ||= build_republish_connection
       republish_connection.start
-
-      republish_connection_variables[:republish_channel] ||= republish_connection.create_channel
-      republish_connection_variables[:republish_exchange] ||= build_republish_exchange
-    end
-
-    def republish_connection_variables
-      thread_variables[republish_connection] ||= {}
-    end
-
-    def republish_channel
-      republish_connection_variables[:republish_channel]
-    end
-
-    def republish_exchange
-      republish_connection_variables[:republish_exchange]
+      @republish_channel = republish_connection.create_channel
+      @republish_exchange = clone_exchange_for_republish
     end
 
     def build_republish_connection
       Bunny.new(connection.instance_variable_get(:'@opts')) # TODO: find more elegant way to "clone" connection
     end
 
-    def build_republish_exchange
-      return republish_channel.default_exchange if @exchange_name.nil? || @exchange_name == ''
+    def clone_exchange_for_republish
+      republish_channel.default_exchange if exchange.name == ''
 
-      republish_channel.exchange(@exchange_name, @exchange_options)
+      republish_channel.exchange exchange.name,
+                                 exchange.instance_variable_get(:'@options').merge(type: exchange.type)
     end
 
     def on_message_return(return_info, properties, message)
@@ -121,14 +109,16 @@ module BunnyPublisher
     end
 
     def setup_queue_for_republish(return_info, properties, message)
-      ensure_republish_connection!
+      @republish_mutex.synchronize do
+        ensure_republish_connection!
 
-      queue = declare_republish_queue(return_info, properties, message)
+        queue = declare_republish_queue(return_info, properties, message)
 
-      # default exchange already has bindings with queues
-      declare_republish_queue_binding(queue, return_info, properties, message) unless republish_exchange.name == ''
+        # default exchange already has bindings with queues
+        declare_republish_queue_binding(queue, return_info, properties, message) unless republish_exchange.name == ''
 
-      republish_channel.deregister_queue(queue) # we are not going to work with this queue in this channel
+        republish_channel.deregister_queue(queue) # we are not going to work with this queue in this channel
+      end
     end
 
     def ensure_message_is_unrouted!(return_info, properties, message)

@@ -8,7 +8,7 @@ module BunnyPublisher
 
     define_callbacks :after_publish, :before_publish, :around_publish
 
-    attr_reader :connection
+    attr_reader :connection, :channel, :exchange
 
     def initialize(publish_connection: nil, connection: nil, exchange: nil, exchange_options: {}, **options)
       @mutex = Mutex.new
@@ -25,13 +25,15 @@ module BunnyPublisher
     end
 
     def publish(message, options = {})
-      ensure_connection!
+      @mutex.synchronize do
+        ensure_connection!
 
-      run_callback(:before_publish, message, options)
-      result = run_callback(:around_publish, message, options) { exchange.publish(message, options) }
-      run_callback(:after_publish, message, options)
+        run_callback(:before_publish, message, options)
+        result = run_callback(:around_publish, message, options) { exchange.publish(message, options) }
+        run_callback(:after_publish, message, options)
 
-      result
+        result
+      end
     end
 
     def close
@@ -43,31 +45,14 @@ module BunnyPublisher
     private
 
     def ensure_connection!
-      @mutex.synchronize { connect! unless connected? }
+      connect! unless connected?
     end
 
     def connect!
       @connection ||= build_connection
       connection.start
-
-      connection_variables[:channel] ||= connection.create_channel
-      connection_variables[:exchange] ||= build_exchange
-    end
-
-    def thread_variables
-      Thread.current[:bunny_publisher] ||= {}.compare_by_identity
-    end
-
-    def connection_variables
-      thread_variables[connection] ||= {}
-    end
-
-    def channel
-      connection_variables[:channel]
-    end
-
-    def exchange
-      connection_variables[:exchange]
+      @channel = connection.create_channel
+      @exchange = build_exchange
     end
 
     def build_connection
