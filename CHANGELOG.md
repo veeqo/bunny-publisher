@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.4...HEAD)
+## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.5...HEAD)
+
+
+## [0.1.5](https://github.com/veeqo/bunny-publisher/compare/v0.1.4...v0.1.5) - 2020-11-04
 
 ### Fixed
 - [#7](https://github.com/veeqo/bunny-publisher/pull/7) Enforce single channel for threaded apps
