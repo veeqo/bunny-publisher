@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.4...HEAD)
 
+### Fixed
+- [#7](https://github.com/veeqo/bunny-publisher/pull/7) Enforce single channel for threaded apps
+
 
 ## [0.1.4](https://github.com/veeqo/bunny-publisher/compare/v0.1.3...v0.1.4) - 2020-11-03
 
