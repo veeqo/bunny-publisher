@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.5...HEAD)
+## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.6...HEAD)
+
+
+## [0.1.6](https://github.com/veeqo/bunny-publisher/compare/v0.1.5...v0.1.6) - 2020-11-24
 
 ### Fixed
 - [#8](https://github.com/veeqo/bunny-publisher/pull/8) Fix errors on recovery from connection failures
