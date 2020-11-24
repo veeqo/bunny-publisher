@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.5...HEAD)
 
+### Fixed
+- [#8](https://github.com/veeqo/bunny-publisher/pull/8) Fix errors on recovery from connection failures
+
 
 ## [0.1.5](https://github.com/veeqo/bunny-publisher/compare/v0.1.4...v0.1.5) - 2020-11-04
 

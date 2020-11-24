@@ -51,8 +51,10 @@ module BunnyPublisher
 
     attr_reader :republish_connection, :republish_channel, :republish_exchange
 
-    def connect!
+    def ensure_connection!
       super
+
+      return if @on_return_set
 
       # `on_return` is called within a frameset of amqp connection.
       # Any interaction within the same connection leads to error. This is why we need extra connection.
@@ -62,21 +64,18 @@ module BunnyPublisher
       else
         exchange.on_return { |*attrs| on_message_return(*attrs) }
       end
+
+      @on_return_set = true
     end
 
     def ensure_republish_connection!
-      connect_for_republish! unless connected_for_republish?
-    end
-
-    def connected_for_republish?
-      republish_connection&.connected? && republish_channel
-    end
-
-    def connect_for_republish!
       @republish_connection ||= build_republish_connection
-      republish_connection.start
-      @republish_channel = republish_connection.create_channel
-      @republish_exchange = clone_exchange_for_republish
+      republish_connection.start if republish_connection.status == :not_connected # Lazy connection initialization.
+
+      wait_until_connection_ready(republish_connection)
+
+      @republish_channel ||= republish_connection.create_channel
+      @republish_exchange ||= clone_exchange_for_republish
     end
 
     def build_republish_connection
