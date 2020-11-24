@@ -45,14 +45,26 @@ module BunnyPublisher
     private
 
     def ensure_connection!
-      connect! unless connected?
+      @connection ||= build_connection
+
+      connection.start if connection.status == :not_connected # Lazy connection initialization.
+
+      wait_until_connection_ready(connection)
+
+      @channel ||= connection.create_channel
+      @exchange ||= build_exchange
     end
 
-    def connect!
-      @connection ||= build_connection
-      connection.start
-      @channel = connection.create_channel
-      @exchange = build_exchange
+    def wait_until_connection_ready(conn)
+      Timeout.timeout((conn.heartbeat || 60) * 2) do # 60 seconds is a default Bunny heartbeat
+        loop do
+          return if conn.status == :open && conn.transport.open?
+
+          sleep 0.001
+        end
+      end
+    rescue Timeout::Error
+      # Connection recovery takes too long, let the next interaction fail with error then.
     end
 
     def build_connection
@@ -63,10 +75,6 @@ module BunnyPublisher
       return channel.default_exchange if @exchange_name.nil? || @exchange_name == ''
 
       channel.exchange(@exchange_name, @exchange_options)
-    end
-
-    def connected?
-      @connection&.connected? && channel
     end
   end
 end
