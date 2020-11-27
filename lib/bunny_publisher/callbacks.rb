@@ -1,41 +1,30 @@
 # frozen_string_literal: true
 
+require 'active_support'
+require 'active_support/callbacks'
+
 module BunnyPublisher
-  # Adds support for callbacks (one per event!)
+  # Adds support for callbacks
   module Callbacks
-    def self.included(klass)
-      klass.extend ClassMethods
+    extend ActiveSupport::Concern
+    include ActiveSupport::Callbacks
+
+    included do
+      define_callbacks :publish
     end
 
     module ClassMethods
-      def define_callbacks(*events)
-        events.each do |event|
-          singleton_class.define_method(event) do |method_or_proc|
-            callbacks[event] = method_or_proc
-          end
-        end
+      def before_publish(*filters, &blk)
+        set_callback(:publish, :before, *filters, &blk)
       end
 
-      def callbacks
-        @callbacks ||= {}
+      def around_publish(*filters, &blk)
+        set_callback(:publish, :around, *filters, &blk)
       end
-    end
 
-    private
-
-    def run_callback(event, *args, &block)
-      case (callback = callback_for_event(event))
-      when nil
-        yield if block_given?
-      when Symbol
-        send(callback, self, *args, &block)
-      when Proc
-        callback.call(self, *args, &block)
+      def after_publish(*filters, &blk)
+        set_callback(:publish, :after, *filters, &blk)
       end
-    end
-
-    def callback_for_event(event)
-      self.class.callbacks[event]
     end
   end
 end
