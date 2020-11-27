@@ -2,7 +2,7 @@
 
 describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
   subject(:publish_message) do
-    publisher.publish(message, message_options.dup)
+    publisher.publish(message, message_options)
     sleep 0.1 # unrouted messages are processed asynchronously
   end
 
@@ -21,39 +21,39 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
         after_publish :my_after_publish_callback
         around_publish :my_around_publish_callback
         before_republish :my_before_republish_callback
-        around_republish :my_around_republish_callback
         after_republish :my_after_republish_callback
+        around_republish :my_around_republish_callback
 
         def callbacks_history
           @callbacks_history ||= []
         end
 
-        def my_before_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['before publish', message, message_options.dup]
+        def my_before_publish_callback
+          callbacks_history << ['before publish', message, message_options]
         end
 
-        def my_after_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['after publish', message, message_options.dup]
+        def my_after_publish_callback
+          callbacks_history << ['after publish', message, message_options]
         end
 
-        def my_around_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['around before publish', message, message_options.dup]
+        def my_around_publish_callback
+          callbacks_history << ['around before publish', message, message_options]
           yield
-          callbacks_history << ['around after publish', message, message_options.dup]
+          callbacks_history << ['around after publish', message, message_options]
         end
 
-        def my_before_republish_callback(_publisher, _return_info, _properties, message)
-          callbacks_history << ['before re-publish', message]
+        def my_before_republish_callback
+          callbacks_history << ['before re-publish', message, message_options]
         end
 
-        def my_after_republish_callback(_publisher, _return_info, _properties, message)
-          callbacks_history << ['after re-publish', message]
+        def my_after_republish_callback
+          callbacks_history << ['after re-publish', message, message_options]
         end
 
-        def my_around_republish_callback(_publisher, _return_info, _properties, message)
-          callbacks_history << ['around before re-publish', message]
+        def my_around_republish_callback
+          callbacks_history << ['around before re-publish', message, message_options]
           yield
-          callbacks_history << ['around after re-publish', message]
+          callbacks_history << ['around after re-publish', message, message_options]
         end
       end
 
@@ -67,11 +67,12 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
         expected_callbacks = [
           ['before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
           ['around before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
-          ['around after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
-          ['after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }]
+          ['around after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
+          ['after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }]
         ]
 
         expect { publish_message }.to change { publisher.callbacks_history }.from([]).to(expected_callbacks)
+                                  .and change { rabbitmq.messages('foobar', count: 999).count }.by(1)
       end
     end
 
@@ -80,15 +81,16 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
         expected_callbacks = [
           ['before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
           ['around before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
-          ['around after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
-          ['after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
-          ['before re-publish', message],
-          ['around before re-publish', message],
-          ['around after re-publish', message],
-          ['after re-publish', message]
+          ['around after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
+          ['after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
+          ['before re-publish', message, { content_type: 'text/plain', delivery_mode: 2, priority: 0, routing_key: 'foobar' }],
+          ['around before re-publish', message, { content_type: 'text/plain', delivery_mode: 2, priority: 0, routing_key: 'foobar' }],
+          ['around after re-publish', message, { content_type: 'text/plain', delivery_mode: 2, priority: 0, routing_key: 'foobar' }],
+          ['after re-publish', message, { content_type: 'text/plain', delivery_mode: 2, priority: 0, routing_key: 'foobar' }]
         ]
 
         expect { publish_message }.to change { publisher.callbacks_history }.from([]).to(expected_callbacks)
+                                  .and change { rabbitmq.messages('foobar', count: 999).count rescue 0 }.by(1)
       end
     end
   end
@@ -107,21 +109,21 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
           @callbacks_history ||= []
         end
 
-        def my_before_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['before publish', message, message_options.dup]
+        def my_before_publish_callback
+          callbacks_history << ['before publish', message, message_options]
         end
 
-        def my_after_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['after publish', message, message_options.dup]
+        def my_after_publish_callback
+          callbacks_history << ['after publish', message, message_options]
         end
 
-        def my_around_publish_callback(_publisher, message, message_options)
-          callbacks_history << ['around before publish', message, message_options.dup]
+        def my_around_publish_callback
+          callbacks_history << ['around before publish', message, message_options]
           yield
-          callbacks_history << ['around after publish', message, message_options.dup]
+          callbacks_history << ['around after publish', message, message_options]
         end
 
-        def on_message_return_callback(_publisher, _return_info, _properties, message)
+        def on_message_return_callback(_return_info, _properties, message)
           callbacks_history << ['on message return', message]
         end
       end
@@ -136,11 +138,12 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
         expected_callbacks = [
           ['before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
           ['around before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
-          ['around after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
-          ['after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }]
+          ['around after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
+          ['after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }]
         ]
 
         expect { publish_message }.to change { publisher.callbacks_history }.from([]).to(expected_callbacks)
+                                  .and not_change { rabbitmq.list_queues.count }
       end
     end
 
@@ -149,12 +152,13 @@ describe BunnyPublisher::Mandatory, 'callbacks', :rabbitmq do
         expected_callbacks = [
           ['before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
           ['around before publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
-          ['around after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
-          ['after publish', message, { content_type: 'text/plain', mandatory: true, delivery_mode: 2, priority: 0 }],
+          ['around after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
+          ['after publish', message, { routing_key: 'foobar', content_type: 'text/plain', mandatory: true }],
           ['on message return', message]
         ]
 
         expect { publish_message }.to change { publisher.callbacks_history }.from([]).to(expected_callbacks)
+                                  .and not_change { rabbitmq.list_queues.count }
       end
     end
   end

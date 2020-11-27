@@ -9,6 +9,12 @@ rvm:
 gemfile:
   - gemfiles/bunny_2.10.x.gemfile
   - gemfiles/bunny_2.x.gemfile
+  - gemfiles/activesupport_4.2.x.gemfile
+
+matrix:
+  exclude:
+    - rvm: 2.7.2
+      gemfile: gemfiles/activesupport_4.2.x.gemfile
 
 before_install: gem install bundler
 before_script:

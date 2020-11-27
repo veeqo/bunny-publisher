@@ -6,8 +6,6 @@ module BunnyPublisher
   class Base
     include Callbacks
 
-    define_callbacks :after_publish, :before_publish, :around_publish
-
     attr_reader :connection, :channel, :exchange
 
     def initialize(publish_connection: nil, connection: nil, exchange: nil, exchange_options: {}, **options)
@@ -24,15 +22,18 @@ module BunnyPublisher
       @connection = publish_connection || connection
     end
 
-    def publish(message, options = {})
+    def publish(message, message_options = {})
       @mutex.synchronize do
+        @message = message
+        @message_options = message_options
+
         ensure_connection!
 
-        run_callback(:before_publish, message, options)
-        result = run_callback(:around_publish, message, options) { exchange.publish(message, options) }
-        run_callback(:after_publish, message, options)
-
-        result
+        run_callbacks(:publish) do
+          exchange.publish(message, message_options.dup) # Bunny modifies message options
+        end
+      ensure
+        @message = @message_options = nil
       end
     end
 
@@ -43,6 +44,8 @@ module BunnyPublisher
     alias stop close
 
     private
+
+    attr_reader :message, :message_options
 
     def ensure_connection!
       @connection ||= build_connection

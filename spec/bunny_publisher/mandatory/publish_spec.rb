@@ -18,35 +18,63 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
 
   after { publisher.stop }
 
+  shared_examples 'no message returned' do
+    it 'does not declare new exchange' do
+      expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
+    end
+
+    it 'does not create new queue' do
+      expect { publish_message }.not_to change { rabbitmq.list_queues.count }
+    end
+
+    it 'does not create new binding' do
+      expect { publish_message }.not_to change { rabbitmq.list_queue_bindings(queue_name).count }
+    end
+  end
+
   context 'when publishing to the default exchange' do
     let(:publisher) { publisher_class.new }
 
-    shared_examples 'for message routed in default exchange' do
-      context 'when message is routed' do
-        before { rabbitmq.declare_queue(queue_name, {}) }
+    context 'when message is routed' do
+      before do
+        rabbitmq.declare_queue(routing_key, {})
+      end
 
-        it 'does not declare any exchange' do
-          expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
-        end
+      include_examples 'no message returned'
 
-        it 'does not create any queue' do
-          expect { publish_message }.not_to change { rabbitmq.list_queues.count }
-        end
+      it 'publishes the message' do
+        publish_message
 
-        it_behaves_like 'a message publisher' do
-          let(:expected_exchange_name) { '' } # '' - is default exchange
-          let(:expected_payload)       { message }
-          let(:expected_properties)    { { 'content_type' => content_type } }
-          let(:expected_routing_key)   { routing_key }
-          let(:expected_queue_name)    { queue_name }
-        end
+        expect(rabbitmq.messages(routing_key).first['payload']).to eq message
       end
     end
 
-    context 'when publisher has original declare_republish_queue method' do
-      include_examples 'for message routed in default exchange'
+    context 'when message is not routed' do
+      shared_examples 'for message routed in default exchange' do
+        context 'when message is routed' do
+          before { rabbitmq.declare_queue(queue_name, {}) }
 
-      context 'when message is not routed' do
+          it 'does not declare any exchange' do
+            expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
+          end
+
+          it 'does not create any queue' do
+            expect { publish_message }.not_to change { rabbitmq.list_queues.count }
+          end
+
+          it_behaves_like 'a message publisher' do
+            let(:expected_exchange_name) { '' } # '' - is default exchange
+            let(:expected_payload)       { message }
+            let(:expected_properties)    { { 'content_type' => content_type } }
+            let(:expected_routing_key)   { routing_key }
+            let(:expected_queue_name)    { queue_name }
+          end
+        end
+      end
+
+      context 'when publisher has original declare_republish_queue method' do
+        include_examples 'for message routed in default exchange'
+
         shared_examples 'for message republishing' do
           it 'does not declare any exchange' do
             expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
@@ -78,90 +106,114 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           end
         end
 
-        context 'when publisher has no queue settings' do
-          let(:expected_queue) do
-            {
-              'name' => 'baz',
-              'arguments' => {},
-              'auto_delete' => false,
-              'durable' => false,
-              'exclusive' => false
-            }
-          end
-
-          include_examples 'for message republishing'
-        end
-
-        context 'when publisher has queue settings' do
-          let(:publisher) { publisher_class.new queue_options: { durable: true } }
-
-          let(:expected_queue) do
-            {
-              'name' => 'baz',
-              'arguments' => {},
-              'auto_delete' => false,
-              'durable' => true,
-              'exclusive' => false
-            }
-          end
-
-          include_examples 'for message republishing'
-        end
-      end
-    end
-
-    context 'when publisher has declare_republish_queue overridden' do
-      let(:publisher_class) do
-        Class.new(BunnyPublisher::Base).tap do |klass|
-          klass.include(BunnyPublisher::Mandatory)
-          klass.class_eval <<-RUBY
-            def declare_republish_queue(return_info, _properties, _message)
-              republish_channel.queue(return_info.routing_key, durable: true, arguments: { 'x-something' => 'custom' })
+        context 'when publisher has no queue name' do
+          context 'when publishing with routing_key' do
+            let(:expected_queue) do
+              {
+                'name' => 'baz',
+                'arguments' => {},
+                'auto_delete' => false,
+                'durable' => false,
+                'exclusive' => false
+              }
             end
-          RUBY
+
+            include_examples 'for message republishing'
+          end
+
+          context 'when publishing without routing_key' do
+            subject(:publish_message) do
+              publisher.publish(message)
+              sleep 0.1 # unrouted messages are processed asynchronously
+            end
+
+            it 'prints error to STDERR' do
+              expect { subject }.to output(/CannotCreateQueue/).to_stderr
+            end
+          end
         end
-      end
 
-      include_examples 'for message routed in default exchange'
+        context 'when publisher has queue name' do
+          let(:publisher) { publisher_class.new queue: 'baz', queue_options: { durable: true } }
 
-      context 'when message is not routed' do
-        it 'does not declare any exchange' do
-          expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
-        end
-
-        it 'creates proper queue' do
-          expected_queues = [
+          let(:expected_queue) do
             {
-              'name' => queue_name,
-              'arguments' => { 'x-something' => 'custom' },
+              'name' => 'baz',
+              'arguments' => {},
               'auto_delete' => false,
               'durable' => true,
               'exclusive' => false
             }
-          ]
+          end
 
-          expect { publish_message }.to change { rabbitmq.list_queues }.from([]).to(expected_queues)
+          context 'when publishing with routing_key' do
+            include_examples 'for message republishing'
+          end
+
+          context 'when publishing without routing_key' do
+            subject(:publish_message) do
+              publisher.publish(message)
+              sleep 0.1 # unrouted messages are processed asynchronously
+            end
+
+            include_examples 'for message republishing'
+          end
+        end
+      end
+
+      context 'when publisher has declare_republish_queue overridden' do
+        let(:publisher_class) do
+          Class.new(BunnyPublisher::Base).tap do |klass|
+            klass.include(BunnyPublisher::Mandatory)
+            klass.class_eval <<-RUBY
+              def declare_republish_queue
+                channel.queue(message_options[:routing_key], durable: true, arguments: { 'x-something' => 'custom' })
+              end
+            RUBY
+          end
         end
 
-        it 'does not create an additional binding despite the default binding' do
-          publish_message
+        include_examples 'for message routed in default exchange'
 
-          expected_bindings = [
-            {
-              'arguments' => {},
-              'destination' => queue_name,
-              'routing_key' => routing_key,
-              'source' => ''
-            }
-          ]
+        context 'when message is not routed' do
+          it 'does not declare any exchange' do
+            expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
+          end
 
-          expect(rabbitmq.list_queue_bindings(queue_name)).to match_array expected_bindings
-        end
+          it 'creates proper queue' do
+            expected_queues = [
+              {
+                'name' => queue_name,
+                'arguments' => { 'x-something' => 'custom' },
+                'auto_delete' => false,
+                'durable' => true,
+                'exclusive' => false
+              }
+            ]
 
-        it 're-publishes the message' do
-          publish_message
+            expect { publish_message }.to change { rabbitmq.list_queues }.from([]).to(expected_queues)
+          end
 
-          expect(rabbitmq.messages(queue_name).first['payload']).to eq message
+          it 'does not create an additional binding despite the default binding' do
+            publish_message
+
+            expected_bindings = [
+              {
+                'arguments' => {},
+                'destination' => queue_name,
+                'routing_key' => routing_key,
+                'source' => ''
+              }
+            ]
+
+            expect(rabbitmq.list_queue_bindings(queue_name)).to match_array expected_bindings
+          end
+
+          it 're-publishes the message' do
+            publish_message
+
+            expect(rabbitmq.messages(queue_name).first['payload']).to eq message
+          end
         end
       end
     end
@@ -178,17 +230,7 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
         rabbitmq.bind_queue(queue_name, exchange_name, routing_key)
       end
 
-      it 'does not declare new exchange' do
-        expect { publish_message }.not_to change { rabbitmq.list_exchanges.count }
-      end
-
-      it 'does not create new queue' do
-        expect { publish_message }.not_to change { rabbitmq.list_queues.count }
-      end
-
-      it 'does not create new binding' do
-        expect { publish_message }.not_to change { rabbitmq.list_queue_bindings(queue_name).count }
-      end
+      include_examples 'no message returned'
 
       it_behaves_like 'a message publisher' do
         let(:expected_exchange_name) { exchange_name }
@@ -241,19 +283,32 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
         end
 
         context 'when publisher has no queue params' do
-          let(:expected_queue_name) { 'baz' }
+          context 'when publishing with routing_key' do
+            let(:expected_queue_name) { 'baz' }
 
-          let(:expected_queue) do
-            {
-              'name' => expected_queue_name,
-              'arguments' => {},
-              'auto_delete' => false,
-              'durable' => false,
-              'exclusive' => false
-            }
+            let(:expected_queue) do
+              {
+                'name' => expected_queue_name,
+                'arguments' => {},
+                'auto_delete' => false,
+                'durable' => false,
+                'exclusive' => false
+              }
+            end
+
+            include_examples 'for message republishing'
           end
 
-          include_examples 'for message republishing'
+          context 'when publishing without routing_key' do
+            subject(:publish_message) do
+              publisher.publish(message)
+              sleep 0.1 # unrouted messages are processed asynchronously
+            end
+
+            it 'prints error to STDERR' do
+              expect { subject }.to output(/CannotCreateQueue/).to_stderr
+            end
+          end
         end
 
         context 'when publisher has queue params' do
@@ -284,8 +339,8 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           Class.new(BunnyPublisher::Base).tap do |klass|
             klass.include(BunnyPublisher::Mandatory)
             klass.class_eval <<-RUBY
-              def declare_republish_queue(return_info, _properties, _message)
-                republish_channel.queue(return_info.routing_key, durable: true, arguments: { 'x-something' => 'custom' })
+              def declare_republish_queue
+                channel.queue(message_options[:routing_key], durable: true, arguments: { 'x-something' => 'custom' })
               end
             RUBY
           end
@@ -351,12 +406,12 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           Class.new(BunnyPublisher::Base).tap do |klass|
             klass.include(BunnyPublisher::Mandatory)
             klass.class_eval <<-RUBY
-              def declare_republish_queue(return_info, _properties, _message)
-                republish_channel.queue('unrouted-docs', durable: true, arguments: { 'x-something' => 'custom' })
+              def declare_republish_queue
+                channel.queue('unrouted-docs', durable: true, arguments: { 'x-something' => 'custom' })
               end
 
-              def declare_republish_queue_binding(queue, return_info, _properties, _message)
-                queue.bind(republish_exchange, arguments: { 'document' => 'text' })
+              def declare_republish_queue_binding(queue)
+                queue.bind(exchange, arguments: { 'document' => 'text' })
               end
             RUBY
           end
@@ -409,6 +464,16 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           expect(rabbitmq.messages('unrouted-docs').first['payload']).to eq message
         end
       end
+    end
+  end
+
+  context 'when broker retuns message with unsupported reply_text' do
+    before { allow_any_instance_of(Bunny::ReturnInfo).to receive(:reply_text).and_return('GTFO') }
+
+    let(:publisher) { publisher_class.new }
+
+    it 'prints error to STDERR' do
+      expect { subject }.to output(/UnsupportedReplyText/).to_stderr
     end
   end
 end

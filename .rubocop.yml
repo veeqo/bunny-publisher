@@ -7,16 +7,37 @@ AllCops:
 Layout/LineLength:
   Max: 120
   Exclude:
-    - "spec/**/*"
+    - spec/**/*
 
 Lint/AmbiguousBlockAssociation:
   Exclude:
-    - "spec/**/*"
+    - spec/**/*
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - spec/**/*
 
 Metrics/BlockLength:
   Exclude:
-    - "spec/**/*"
+    - spec/**/*
+
+Metrics/MethodLength:
+  Max: 15
+
+Naming/MemoizedInstanceVariableName:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
 
 Style/EvalWithLocation:
   Exclude:
-    - "spec/**/*"
+    - spec/**/*
+
+Style/RescueModifier:
+  Exclude:
+    - spec/**/*
+
+Layout/MultilineMethodCallIndentation:
+  Exclude:
+    - spec/**/*
