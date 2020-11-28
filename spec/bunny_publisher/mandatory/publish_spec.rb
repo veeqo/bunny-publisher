@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
-  subject(:publish_message) do
-    publisher.publish(message, message_options)
-    sleep 0.1 # unrouted messages are processed asynchronously
-  end
+  subject { publish_message }
 
   let(:queue_name)      { 'baz' }
   let(:routing_key)     { 'baz' }
@@ -467,6 +464,90 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
     end
   end
 
+  describe 'connection state handling' do
+    let(:publisher) do
+      publisher_class.new connection: connection
+    end
+
+    context 'when connection is closed by broker' do
+      before do
+        allow(publisher).to receive(:setup_queue_for_republish).and_wrap_original do |original|
+          unless @connection_was_closed_once
+            rabbitmq.close_connections
+            @connection_was_closed_once = true
+          end
+
+          original.call
+        end
+      end
+
+      context 'when connection recovery is enabled (by default)' do
+        let(:connection) { Bunny.new(ENV['RABBITMQ_URL'], heartbeat: 5, log_level: Logger::ERROR) }
+
+        it 'waits for connection recovery & publishes the message' do
+          expect(rabbitmq.list_connections).to eq []
+          connection.start
+
+          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
+          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+
+          expect do
+            publish_message
+            Timeout.timeout(20) { sleep 0.1 until publisher.send(:connection_open?) }
+            sleep(0.1)
+          end.to change { messages_count }.by(1)
+        end
+      end
+
+      context 'when connection recovery is disabled' do
+        let(:connection) { Bunny.new(ENV['RABBITMQ_URL'], automatic_recovery: false, heartbeat: 5, log_level: Logger::ERROR) }
+
+        before { allow(publisher).to receive(:sleep) }
+
+        it 'does not wait for connection recovery & fails to publish the message' do
+          expect(rabbitmq.list_connections).to eq []
+          connection.start
+
+          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
+          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+
+          expect { publish_message && sleep(0.2) }.to not_change { messages_count }
+                                                  .and output(/Bunny::ConnectionClosedError/).to_stderr
+
+          expect(publisher).not_to have_received(:sleep)
+        end
+      end
+    end
+
+    context 'when connection is closed by client' do
+      let(:connection) { Bunny.new(ENV['RABBITMQ_URL'], heartbeat: 5) }
+
+      before do
+        allow(publisher).to receive(:setup_queue_for_republish).and_wrap_original do |original|
+          unless @connection_was_closed_once
+            connection.close
+            @connection_was_closed_once = true
+          end
+
+          original.call
+        end
+      end
+
+      it 'restarts the connection & publishes the message' do
+        expect(rabbitmq.list_connections).to eq []
+        connection.start
+
+        # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
+        Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+
+        expect do
+          publish_message
+          Timeout.timeout(10) { sleep 0.1 until connection.connected? }
+        end.to change { messages_count }.by(1)
+      end
+    end
+  end
+
   context 'when broker retuns message with unsupported reply_text' do
     before { allow_any_instance_of(Bunny::ReturnInfo).to receive(:reply_text).and_return('GTFO') }
 
@@ -475,5 +556,16 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
     it 'prints error to STDERR' do
       expect { subject }.to output(/UnsupportedReplyText/).to_stderr
     end
+  end
+
+  def publish_message
+    publisher.publish(message, message_options)
+    sleep 0.1 # unrouted messages are processed asynchronously
+  end
+
+  def messages_count
+    rabbitmq.messages(queue_name, count: 999).count
+  rescue Faraday::ResourceNotFound
+    0
   end
 end

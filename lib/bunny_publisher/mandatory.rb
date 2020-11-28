@@ -73,8 +73,15 @@ module BunnyPublisher
     def ensure_connection!
       super
 
-      return if @on_return_set
+      configure_exchange_to_process_returns unless @on_return_set
+    end
 
+    def reset_exchange!
+      super
+      configure_exchange_to_process_returns
+    end
+
+    def configure_exchange_to_process_returns
       case (callback = self.class.on_message_return_callback)
       when nil
         exchange.on_return { |*attrs| on_message_return(*attrs) }
@@ -115,11 +122,12 @@ module BunnyPublisher
         @unrouted_message_processing = true
         @message, @message_options = returned_messages.pop
 
-        ensure_connection!
-        setup_queue_for_republish
-
         run_callbacks(:republish) do
-          exchange.publish(message, message_options.merge(mandatory: true))
+          with_errors_handling do
+            ensure_connection!
+            setup_queue_for_republish
+            exchange.publish(message, message_options.merge(mandatory: true))
+          end
         end
       ensure
         @message = @message_options = nil
@@ -146,11 +154,11 @@ module BunnyPublisher
 
       return unless @unrouted_message_processing
 
-      puts("Waiting up to #{timeout} seconds for unrouted messages handling")
+      logger.warn { "Waiting up to #{timeout} seconds for unrouted messages handling" }
 
       Timeout.timeout(timeout) { sleep 0.01 while @unrouted_message_processing }
     rescue Timeout::Error
-      warn('Some unrouted messages are lost on process exit!')
+      logger.warn { 'Some unrouted messages are lost on process exit!' }
     end
 
     def ensure_can_create_queue!(name)

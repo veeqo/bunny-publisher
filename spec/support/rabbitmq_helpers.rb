@@ -50,6 +50,12 @@ module RabbitmqHelpers
       # it is ok
     end
 
+    def close_connections
+      client.list_connections.each do |conn|
+        client.close_connection(conn.fetch('name'))
+      end
+    end
+
     def method_missing(method_name, *args)
       if client.respond_to?(method_name)
         if %i[list_connections list_channels].include?(method_name)
