@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 2.5'
 
   spec.add_dependency 'activesupport', '>= 4.2'
-  spec.add_dependency 'bunny', '~> 2.10'
+  spec.add_dependency 'bunny', '~> 2.17'
 
   spec.add_development_dependency 'appraisal', '~> 2.3.0'
   spec.add_development_dependency 'bundler', '>= 2.0'

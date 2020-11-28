@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - [#9](https://github.com/veeqo/bunny-publisher/pull/9) Rework callbacks & Mandatory publisher
-
+- [#10](https://github.com/veeqo/bunny-publisher/pull/10) Improve errors handling for cases when connection can be recovered
 
 ## [0.1.6](https://github.com/veeqo/bunny-publisher/compare/v0.1.5...v0.1.6) - 2020-11-24
 

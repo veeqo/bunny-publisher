@@ -7,8 +7,7 @@ rvm:
   - 2.6.6
   - 2.7.2
 gemfile:
-  - gemfiles/bunny_2.10.x.gemfile
-  - gemfiles/bunny_2.x.gemfile
+  - gemfiles/bunny_2.17.x.gemfile
   - gemfiles/activesupport_4.2.x.gemfile
 
 matrix:

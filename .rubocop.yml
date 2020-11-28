@@ -21,8 +21,19 @@ Metrics/BlockLength:
   Exclude:
     - spec/**/*
 
+Metrics/AbcSize:
+  Exclude:
+    - lib/bunny_publisher/mandatory.rb
+
+Metrics/ModuleLength:
+  Exclude:
+    - lib/bunny_publisher/mandatory.rb
+
 Metrics/MethodLength:
   Max: 15
+  Exclude:
+    - lib/bunny_publisher/base.rb
+    - lib/bunny_publisher/mandatory.rb
 
 Naming/MemoizedInstanceVariableName:
   Enabled: false
