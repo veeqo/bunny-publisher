@@ -488,8 +488,7 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           expect(rabbitmq.list_connections).to eq []
           connection.start
 
-          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
-          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+          wait_for_connections_list
 
           expect do
             publish_message
@@ -508,8 +507,7 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           expect(rabbitmq.list_connections).to eq []
           connection.start
 
-          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
-          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+          wait_for_connections_list
 
           expect { publish_message && sleep(0.2) }.to not_change { messages_count }
                                                   .and output(/Bunny::ConnectionClosedError/).to_stderr
@@ -537,8 +535,7 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
         expect(rabbitmq.list_connections).to eq []
         connection.start
 
-        # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
-        Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+        wait_for_connections_list
 
         expect do
           publish_message
@@ -567,5 +564,10 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
     rabbitmq.messages(queue_name, count: 999).count
   rescue Faraday::ResourceNotFound
     0
+  end
+
+  def wait_for_connections_list
+    # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
+    Timeout.timeout(6) { sleep 0.1 while rabbitmq.list_connections == [] }
   end
 end

@@ -129,8 +129,7 @@ describe BunnyPublisher::Base, '#publish', :rabbitmq do
           expect { publish_message }.to change { publisher.connection.status }.from(:not_connected).to(:open)
                                     .and change { messages_count }.by(1)
 
-          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
-          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+          wait_for_connections_list
 
           expect { rabbitmq.close_connections && sleep(0.1) }.to change { connection.status }.from(:open).to(:disconnected)
 
@@ -150,8 +149,7 @@ describe BunnyPublisher::Base, '#publish', :rabbitmq do
           expect { publish_message }.to change { publisher.connection.status }.from(:not_connected).to(:open)
                                     .and change { messages_count }.by(1)
 
-          # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
-          Timeout.timeout(5.01) { sleep 0.1 while rabbitmq.list_connections == [] }
+          wait_for_connections_list
 
           expect { rabbitmq.close_connections && sleep(0.1) }.to change { connection.status }.from(:open).to(:disconnected)
 
@@ -182,5 +180,10 @@ describe BunnyPublisher::Base, '#publish', :rabbitmq do
 
   def messages_count
     rabbitmq.messages(queue_name, count: 999).count
+  end
+
+  def wait_for_connections_list
+    # rmq updates stats every 5 second so we have to wait a bit to get actual connections list via http API
+    Timeout.timeout(6) { sleep 0.1 while rabbitmq.list_connections == [] }
   end
 end
