@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.1.6...HEAD)
+## [Unreleased](https://github.com/veeqo/bunny-publisher/compare/v0.2.0...HEAD)
+
+
+## [0.2.0](https://github.com/veeqo/bunny-publisher/compare/v0.1.6...v0.2.0) - 2020-11-30
 
 ### Changed
 - [#9](https://github.com/veeqo/bunny-publisher/pull/9) Rework callbacks & Mandatory publisher
