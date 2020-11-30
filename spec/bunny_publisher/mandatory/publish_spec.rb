@@ -493,7 +493,7 @@ describe BunnyPublisher::Mandatory, '#publish', :rabbitmq do
           expect do
             publish_message
             Timeout.timeout(20) { sleep 0.1 until publisher.send(:connection_open?) }
-            sleep(0.1)
+            sleep(0.2)
           end.to change { messages_count }.by(1)
         end
       end
