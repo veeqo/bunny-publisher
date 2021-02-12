@@ -9,6 +9,7 @@ require 'bunny_publisher/callbacks'
 require 'bunny_publisher/errors'
 require 'bunny_publisher/base'
 require 'bunny_publisher/mandatory'
+require 'bunny_publisher/rpc'
 require 'bunny_publisher/test'
 
 module BunnyPublisher
@@ -24,13 +25,14 @@ module BunnyPublisher
     def configure
       require 'ostruct'
 
-      config = OpenStruct.new(mandatory: false, test: false)
+      config = OpenStruct.new(mandatory: false, rpc: false, test: false)
 
       yield(config)
 
       klass = Class.new(Base) do
         include ::BunnyPublisher::Mandatory if config.delete_field(:mandatory)
         include ::BunnyPublisher::Test      if config.delete_field(:test)
+        include ::BunnyPublisher::RPC       if config.delete_field(:rpc)
       end
 
       @publisher = klass.new(**config.to_h)

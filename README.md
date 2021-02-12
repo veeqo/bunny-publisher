@@ -109,7 +109,15 @@ end
 
 ## Remote Procedure Call RPC
 
-Not implemented yet
+The publisher will return response from RPC server. Be sure that the RPC server is running and messages are routed properly before publish them.
+
+```ruby
+BunnyPublisher.configure do |c|
+  c.rpc = true
+
+  # ...
+end
+```
 
 ## Test mode
 
